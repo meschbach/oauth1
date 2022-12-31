@@ -64,8 +64,8 @@ func NewClient(ctx context.Context, config *Config, token *Token) *http.Client {
 // oauth_callback_confirmed is true. Returns the request token and secret
 // (temporary credentials).
 // See RFC 5849 2.1 Temporary Credentials.
-func (c *Config) RequestToken() (requestToken, requestSecret string, err error) {
-	req, err := http.NewRequest("POST", c.Endpoint.RequestTokenURL, nil)
+func (c *Config) RequestToken(ctx context.Context) (requestToken, requestSecret string, err error) {
+	req, err := http.NewRequestWithContext(ctx, "POST", c.Endpoint.RequestTokenURL, nil)
 	if err != nil {
 		return "", "", err
 	}
