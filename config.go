@@ -87,11 +87,15 @@ func (c *Config) RequestToken(ctx context.Context) (requestToken, requestSecret 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		return "", "", fmt.Errorf("oauth1: invalid status %d: %s", resp.StatusCode, body)
 	}
+	responseBodyString := string(body)
 
 	// ParseQuery to decode URL-encoded application/x-www-form-urlencoded body
-	values, err := url.ParseQuery(string(body))
+	values, err := url.ParseQuery(responseBodyString)
 	if err != nil {
-		return "", "", err
+		return "", "", &badResponseURL{
+			GivenURL:        responseBodyString,
+			UnderlyingError: err,
+		}
 	}
 	requestToken = values.Get(oauthTokenParam)
 	requestSecret = values.Get(oauthTokenSecretParam)
@@ -102,6 +106,15 @@ func (c *Config) RequestToken(ctx context.Context) (requestToken, requestSecret 
 		return "", "", errors.New("oauth1: oauth_callback_confirmed was not true")
 	}
 	return requestToken, requestSecret, nil
+}
+
+type badResponseURL struct {
+	GivenURL        string
+	UnderlyingError error
+}
+
+func (b *badResponseURL) Error() string {
+	return fmt.Sprintf("Failed to parse URL %q because %s", b.GivenURL, b.UnderlyingError.Error())
 }
 
 // AuthorizationURL accepts a request token and returns the *url.URL to the
